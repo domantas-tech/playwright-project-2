@@ -1,27 +1,63 @@
 name: Playwright Tests
+
 on:
+  # Daily run. Cron is ALWAYS in UTC: 06:17 UTC = 08:17 Vilnius (winter) / 09:17 (summer).
+  schedule:
+    - cron: '17 6 * * *'
+  # "Run workflow" button in the Actions tab.
+  workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+
+# All tests share one web-shop account (one cart), so never run two workflows at once.
+concurrency:
+  group: playwright-tests
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Create credentials file from secret
+        env:
+          CLIENT_APP_JSON: ${{ secrets.CLIENT_APP_JSON }}
+        run: |
+          if [ -z "$CLIENT_APP_JSON" ]; then
+            echo "::error::Repository secret CLIENT_APP_JSON is not set. See CI-GUIDE.md."
+            exit 1
+          fi
+          printf '%s' "$CLIENT_APP_JSON" > utils/clientAPPJSON.json
+          node -e "JSON.parse(require('fs').readFileSync('utils/clientAPPJSON.json','utf8'))" \
+            || { echo "::error::CLIENT_APP_JSON secret is not valid JSON."; exit 1; }
+
+      - name: Run Playwright tests
+        run: npx playwright test
+
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 14

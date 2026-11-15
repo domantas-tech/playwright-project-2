@@ -44,3 +44,6 @@ scripts.md
 # Logs
 *.log
 npm-debug.log*
+
+# Local CI documentation
+CI-GUIDE.md
