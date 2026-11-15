@@ -1,0 +1,46 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Cucumber reports
+/reports/
+cucumber-report.*
+
+# Credentials, tokens and secrets
+utils/clientAPPJSON.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*secret*
+*token*
+*credentials*
+storageState*.json
+auth*.json
+
+# Local data files (may contain personal data)
+*.xlsx
+*.xls
+*.csv
+
+# Editor / OS
+*.code-workspace
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Personal notes
+scripts.md
+
+# Logs
+*.log
+npm-debug.log*
